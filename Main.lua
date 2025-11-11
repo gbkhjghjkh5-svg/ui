@@ -3,11 +3,18 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
-
+local Services = Wrappers.Services
+setmetatable(Services, {
+	__index = function(self, Name: string)
+		local Service = game:GetService(Name)
+		return NewReference(Service)
+	end,
+})
+local CoreGui = Services.CoreGui
 local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
 gui.ResetOnSpawn = false
-gui.Parent = game:GetService("CoreGui"):FindFirstChild("RobloxGui")
+gui.Parent = CoreGui:FindFirstChild("RobloxGui")
 
 local baseWidth, baseHeight = 400, 300
 local currentScale = 1
@@ -405,6 +412,7 @@ RunService.RenderStepped:Connect(function(dt)
 end)
 
 return {Logs = Logs, Popups = Popups}
+
 
 
 
