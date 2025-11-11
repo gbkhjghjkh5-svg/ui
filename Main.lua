@@ -2,6 +2,7 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
 
 local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
@@ -72,27 +73,19 @@ closeStroke.Color = Color3.fromRGB(40,40,45)
 closeStroke.Thickness = 1
 closeStroke.Parent = closeBtn
 
-local scaleHint = Instance.new("TextLabel")
-scaleHint.Size = UDim2.new(0, 120, 0, 20)
-scaleHint.Position = UDim2.new(1, -180, 0.5, 10)
-scaleHint.BackgroundTransparency = 1
-scaleHint.Text = "Scale: [ ] decrease / ] increase"
-scaleHint.Font = Enum.Font.Code
-scaleHint.TextSize = 11
-scaleHint.TextColor3 = Color3.fromRGB(160,160,160)
-scaleHint.Parent = header
-
 local logsContainer = Instance.new("ScrollingFrame")
 logsContainer.Size = UDim2.new(1, -20, 1, -60)
 logsContainer.Position = UDim2.new(0, 10, 0, 50)
 logsContainer.BackgroundTransparency = 1
 logsContainer.BorderSizePixel = 0
-logsContainer.ScrollBarThickness = 6
+logsContainer.ScrollBarThickness = 10
 logsContainer.ScrollBarImageColor3 = Color3.fromRGB(60, 60, 70)
 logsContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
 logsContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
 logsContainer.Parent = main
 logsContainer.ScrollBarImageTransparency = 0.25
+logsContainer.ScrollingEnabled = true
+logsContainer.ClipsDescendants = true
 
 local logsLayout = Instance.new("UIListLayout")
 logsLayout.Padding = UDim.new(0, 6)
@@ -194,6 +187,10 @@ end
 local Logs = {}
 local Popups = {}
 
+logsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    logsContainer.CanvasPosition = Vector2.new(0, logsLayout.AbsoluteContentSize.Y)
+end)
+
 function Logs:AddLog(typeStr, message, color)
     color = color or Color3.fromRGB(100,150,255)
     local timestamp = os.date("%H:%M:%S")
@@ -205,7 +202,7 @@ function Logs:AddLog(typeStr, message, color)
     outer.Parent = logsContainer
 
     local logBg = Instance.new("Frame")
-    logBg.Size = UDim2.new(1, 0, 0, 28)
+    logBg.Size = UDim2.new(1, -14, 0, 28)
     logBg.Position = UDim2.new(0, 0, 0, 0)
     logBg.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
     logBg.BackgroundTransparency = 0.02
@@ -220,6 +217,7 @@ function Logs:AddLog(typeStr, message, color)
     bgStroke.Color = Color3.fromRGB(45,45,50)
     bgStroke.Thickness = 1
     bgStroke.Parent = logBg
+
     local timestampLabel = Instance.new("TextLabel")
     timestampLabel.Size = UDim2.new(0, 65, 1, 0)
     timestampLabel.Position = UDim2.new(0, 8, 0, 0)
@@ -247,7 +245,7 @@ function Logs:AddLog(typeStr, message, color)
     typeCorner.Parent = typeLabel
 
     local messageLabel = Instance.new("TextLabel")
-    messageLabel.Size = UDim2.new(1, -160, 1, 0)
+    messageLabel.Size = UDim2.new(1, -170, 1, 0)
     messageLabel.Position = UDim2.new(0, 140, 0, 0)
     messageLabel.BackgroundTransparency = 1
     messageLabel.Text = message or ""
@@ -271,8 +269,11 @@ function Popups:ShowPopup(titleText, messageText, button2Text, button2Callback)
     popupTitle.Text = titleText or "Notification"
     popupMessage.Text = messageText or ""
 
-    buttonContainer:ClearAllChildren()
-    buttonLayout.Parent = buttonContainer
+    for _, child in pairs(buttonContainer:GetChildren()) do
+        if child ~= buttonLayout then
+            child:Destroy()
+        end
+    end
 
     local okBtn = createButton("OK", Color3.fromRGB(80, 80, 160))
     okBtn.MouseButton1Click:Connect(function()
@@ -314,9 +315,13 @@ local isClosed = false
 local function setClosed(state)
     isClosed = state
     if state then
-        TweenService:Create(main, TweenInfo.new(0.26, Enum.EasingStyle.Quad), {BackgroundTransparency = 1}):Play()
-        TweenService:Create(main, TweenInfo.new(0.26, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 0, 0, 0)}):Play()
+        local t1 = TweenService:Create(main, TweenInfo.new(0.26, Enum.EasingStyle.Quad), {BackgroundTransparency = 1})
+        local t2 = TweenService:Create(main, TweenInfo.new(0.26, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 0, 0, 0)})
+        t2.Completed:Connect(function() main.Visible = false end)
+        t1:Play()
+        t2:Play()
     else
+        main.Visible = true
         local w, h = baseWidth * currentScale, baseHeight * currentScale
         main.Size = UDim2.new(0, 0, 0, 0)
         TweenService:Create(main, TweenInfo.new(0.30, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, w, 0, h), BackgroundTransparency = 0.05}):Play()
@@ -346,8 +351,8 @@ end)
 
 local dragging = false
 local dragStart = Vector2.new(0,0)
-local startPos = Vector2.new(0,0)
-local targetPos = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
+local startCenter = Vector2.new(0,0)
+local targetCenter = Camera and Camera.ViewportSize/2 or Vector2.new(400,300)
 
 local function toTop(instance)
     instance.Parent = instance.Parent
@@ -357,7 +362,8 @@ header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = UserInputService:GetMouseLocation()
-        startPos = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
+        startCenter = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
+        targetCenter = startCenter
         toTop(main)
         TweenService:Create(header, TweenInfo.new(0.12), {BackgroundTransparency = 0.02}):Play()
     end
@@ -374,23 +380,67 @@ UserInputService.InputChanged:Connect(function(input)
     if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
         local mouse = UserInputService:GetMouseLocation()
         local delta = mouse - dragStart
-        targetPos = startPos + delta
+        targetCenter = startCenter + delta
+    end
+end)
+
+local resizing = false
+local resizeStartMouse = Vector2.new(0,0)
+local resizeStartSize = Vector2.new(0,0)
+local resizeStartCenter = Vector2.new(0,0)
+
+local resizeGrip = Instance.new("Frame")
+resizeGrip.Size = UDim2.new(0, 16, 0, 16)
+resizeGrip.Position = UDim2.new(1, -10, 1, -10)
+resizeGrip.AnchorPoint = Vector2.new(0.5, 0.5)
+resizeGrip.BackgroundTransparency = 1
+resizeGrip.Parent = main
+
+local gripCorner = Instance.new("UICorner")
+gripCorner.CornerRadius = UDim.new(0,4)
+gripCorner.Parent = resizeGrip
+
+resizeGrip.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        resizing = true
+        resizeStartMouse = UserInputService:GetMouseLocation()
+        resizeStartSize = main.AbsoluteSize
+        resizeStartCenter = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
+        toTop(main)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if resizing and input.UserInputType == Enum.UserInputType.MouseButton1 then
+        resizing = false
+        baseWidth = main.AbsoluteSize.X
+        baseHeight = main.AbsoluteSize.Y
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local mouse = UserInputService:GetMouseLocation()
+        local delta = mouse - resizeStartMouse
+        local newW = math.clamp(resizeStartSize.X + delta.X, 200, Camera.ViewportSize.X - 40)
+        local newH = math.clamp(resizeStartSize.Y + delta.Y, 120, Camera.ViewportSize.Y - 40)
+        main.Size = UDim2.new(0, newW, 0, newH)
+        local newCenter = resizeStartCenter
+        main.Position = UDim2.new(0, newCenter.X - newW/2, 0, newCenter.Y - newH/2)
     end
 end)
 
 RunService.RenderStepped:Connect(function(dt)
     local lerpFactor = 12 * dt
-    if not dragging then
-        targetPos = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
+    if not dragging and not resizing then
+        targetCenter = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
     end
 
-    local curCenterX = main.AbsolutePosition.X + main.AbsoluteSize.X/2
-    local curCenterY = main.AbsolutePosition.Y + main.AbsoluteSize.Y/2
-
-    local newCenterX = curCenterX + (targetPos.X - curCenterX) * lerpFactor
-    local newCenterY = curCenterY + (targetPos.Y - curCenterY) * lerpFactor
-
-    main.Position = UDim2.new(0, newCenterX, 0, newCenterY)
+    local curCenter = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
+    local newCenter = curCenter + (targetCenter - curCenter) * lerpFactor
+    local half = Vector2.new(main.AbsoluteSize.X/2, main.AbsoluteSize.Y/2)
+    local newTopLeft = Vector2.new(newCenter.X - half.X, newCenter.Y - half.Y)
+    main.Position = UDim2.new(0, newTopLeft.X, 0, newTopLeft.Y)
 end)
 
 return {Logs = Logs, Popups = Popups}
