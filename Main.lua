@@ -7,7 +7,7 @@ local Camera = workspace.CurrentCamera
 local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
 gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
+gui.Parent = game:GetService("CoreGui").RobloxGui
 
 local baseWidth, baseHeight = 400, 300
 local currentScale = 1
@@ -405,3 +405,4 @@ RunService.RenderStepped:Connect(function(dt)
 end)
 
 return {Logs = Logs, Popups = Popups}
+
