@@ -45,7 +45,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -60, 1, 0)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "BBSE V1.0 Beta"
+title.Text = "BESE V1.0 Beta"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Font = Enum.Font.Code
 title.TextSize = 16
@@ -351,8 +351,9 @@ end)
 
 local dragging = false
 local dragStart = Vector2.new(0,0)
-local startCenter = Vector2.new(0,0)
-local targetCenter = Camera and (Camera.ViewportSize / 2) or Vector2.new(400,300)
+local startPos = Vector2.new(0,0)
+local viewportCenter = Camera and (Camera.ViewportSize / 2) or Vector2.new(400,300)
+local targetPos = viewportCenter
 
 local function toTop(instance)
     instance.Parent = instance.Parent
@@ -362,8 +363,12 @@ header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = UserInputService:GetMouseLocation()
-        startCenter = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
-        targetCenter = startCenter
+        if main.AbsoluteSize.X > 0 and main.AbsoluteSize.Y > 0 then
+            startPos = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
+        else
+            startPos = viewportCenter
+        end
+        targetPos = startPos
         toTop(main)
         TweenService:Create(header, TweenInfo.new(0.12), {BackgroundTransparency = 0.02}):Play()
     end
@@ -380,63 +385,22 @@ UserInputService.InputChanged:Connect(function(input)
     if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
         local mouse = UserInputService:GetMouseLocation()
         local delta = mouse - dragStart
-        targetCenter = startCenter + delta
-    end
-end)
-
-local resizing = false
-local resizeStartMouse = Vector2.new(0,0)
-local resizeStartSize = Vector2.new(0,0)
-local resizeStartCenter = Vector2.new(0,0)
-
-local resizeGrip = Instance.new("Frame")
-resizeGrip.Size = UDim2.new(0, 16, 0, 16)
-resizeGrip.Position = UDim2.new(1, -10, 1, -10)
-resizeGrip.AnchorPoint = Vector2.new(0.5, 0.5)
-resizeGrip.BackgroundTransparency = 1
-resizeGrip.Parent = main
-
-local gripCorner = Instance.new("UICorner")
-gripCorner.CornerRadius = UDim.new(0,4)
-gripCorner.Parent = resizeGrip
-
-resizeGrip.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        resizing = true
-        resizeStartMouse = UserInputService:GetMouseLocation()
-        resizeStartSize = main.AbsoluteSize
-        resizeStartCenter = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
-        toTop(main)
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if resizing and input.UserInputType == Enum.UserInputType.MouseButton1 then
-        resizing = false
-        baseWidth = main.AbsoluteSize.X
-        baseHeight = main.AbsoluteSize.Y
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local mouse = UserInputService:GetMouseLocation()
-        local delta = mouse - resizeStartMouse
-        local newW = math.clamp(resizeStartSize.X + delta.X, 200, Camera.ViewportSize.X - 40)
-        local newH = math.clamp(resizeStartSize.Y + delta.Y, 120, Camera.ViewportSize.Y - 40)
-        main.Size = UDim2.new(0, newW, 0, newH)
-        main.Position = UDim2.new(0, resizeStartCenter.X, 0, resizeStartCenter.Y)
+        targetPos = startPos + delta
     end
 end)
 
 RunService.RenderStepped:Connect(function(dt)
     local lerpFactor = 12 * dt
-    if not dragging and not resizing then
-        targetCenter = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
+    local curCenter
+    if main.AbsoluteSize.X > 0 and main.AbsoluteSize.Y > 0 then
+        curCenter = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
+    else
+        curCenter = targetPos
     end
-
-    local curCenter = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
-    local newCenter = curCenter + (targetCenter - curCenter) * lerpFactor
+    if not dragging then
+        targetPos = curCenter
+    end
+    local newCenter = curCenter + (targetPos - curCenter) * lerpFactor
     main.Position = UDim2.new(0, newCenter.X, 0, newCenter.Y)
 end)
 
