@@ -188,7 +188,7 @@ local Logs = {}
 local Popups = {}
 
 logsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    logsContainer.CanvasPosition = Vector2.new(0, logsLayout.AbsoluteContentSize.Y)
+    logsContainer.CanvasPosition = Vector2.new(0, math.max(0, logsLayout.AbsoluteContentSize.Y - logsContainer.AbsoluteSize.Y))
 end)
 
 function Logs:AddLog(typeStr, message, color)
@@ -202,7 +202,7 @@ function Logs:AddLog(typeStr, message, color)
     outer.Parent = logsContainer
 
     local logBg = Instance.new("Frame")
-    logBg.Size = UDim2.new(1, -14, 0, 28)
+    logBg.Size = UDim2.new(1, -18, 0, 28)
     logBg.Position = UDim2.new(0, 0, 0, 0)
     logBg.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
     logBg.BackgroundTransparency = 0.02
@@ -352,7 +352,7 @@ end)
 local dragging = false
 local dragStart = Vector2.new(0,0)
 local startCenter = Vector2.new(0,0)
-local targetCenter = Camera and Camera.ViewportSize/2 or Vector2.new(400,300)
+local targetCenter = Camera and (Camera.ViewportSize / 2) or Vector2.new(400,300)
 
 local function toTop(instance)
     instance.Parent = instance.Parent
@@ -425,8 +425,7 @@ UserInputService.InputChanged:Connect(function(input)
         local newW = math.clamp(resizeStartSize.X + delta.X, 200, Camera.ViewportSize.X - 40)
         local newH = math.clamp(resizeStartSize.Y + delta.Y, 120, Camera.ViewportSize.Y - 40)
         main.Size = UDim2.new(0, newW, 0, newH)
-        local newCenter = resizeStartCenter
-        main.Position = UDim2.new(0, newCenter.X - newW/2, 0, newCenter.Y - newH/2)
+        main.Position = UDim2.new(0, resizeStartCenter.X, 0, resizeStartCenter.Y)
     end
 end)
 
@@ -438,10 +437,7 @@ RunService.RenderStepped:Connect(function(dt)
 
     local curCenter = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
     local newCenter = curCenter + (targetCenter - curCenter) * lerpFactor
-    local half = Vector2.new(main.AbsoluteSize.X/2, main.AbsoluteSize.Y/2)
-    local newTopLeft = Vector2.new(newCenter.X - half.X, newCenter.Y - half.Y)
-    main.Position = UDim2.new(0, newTopLeft.X, 0, newTopLeft.Y)
+    main.Position = UDim2.new(0, newCenter.X, 0, newCenter.Y)
 end)
 
 return {Logs = Logs, Popups = Popups}
-
