@@ -13,7 +13,7 @@ local currentScale = 1
 
 local main = Instance.new("Frame")
 main.Size = UDim2.new(0, baseWidth, 0, baseHeight)
-main.Position = UDim2.new(0.5, -baseWidth/2, 0.5, -baseHeight/2)
+main.Position = UDim2.new(0.5, 0, 0.5, 0)
 main.AnchorPoint = Vector2.new(0.5, 0.5)
 main.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 main.BackgroundTransparency = 0.05
@@ -46,12 +46,11 @@ title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
 title.Text = "BESE V1.0 Beta"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.Font = Enum.Font.Code -- monospace
+title.Font = Enum.Font.Code
 title.TextSize = 16
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = header
 
--- Close button in header
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 40, 0, 24)
 closeBtn.Position = UDim2.new(1, -50, 0.5, -12)
@@ -268,7 +267,6 @@ function Logs:AddLog(typeStr, message, color)
     TweenService:Create(logBg, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
 end
 
--- Popup functions
 function Popups:ShowPopup(titleText, messageText, button2Text, button2Callback)
     popupTitle.Text = titleText or "Notification"
     popupMessage.Text = messageText or ""
@@ -294,7 +292,7 @@ function Popups:ShowPopup(titleText, messageText, button2Text, button2Callback)
     popupOverlay.Visible = true
     popupOverlay.BackgroundTransparency = 1
     popup.Size = UDim2.new(0, 0, 0, 0)
-    popup.Position = UDim2.new(0.5, 0, 0.5, 0) 
+    popup.Position = UDim2.new(0.5, 0, 0.5, 0)
 
     local tweenIn = TweenService:Create(popupOverlay, TweenInfo.new(0.28), {BackgroundTransparency = 0.7})
     local tweenPopup = TweenService:Create(popup, TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 300, 0, 150)})
@@ -349,7 +347,7 @@ end)
 local dragging = false
 local dragStart = Vector2.new(0,0)
 local startPos = Vector2.new(0,0)
-local targetPos = Vector2.new(main.AbsolutePosition.X, main.AbsolutePosition.Y)
+local targetPos = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
 
 local function toTop(instance)
     instance.Parent = instance.Parent
@@ -358,8 +356,8 @@ end
 header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
-        dragStart = UserInputService:GetMouseLocation() 
-        startPos = Vector2.new(main.AbsolutePosition.X, main.AbsolutePosition.Y)
+        dragStart = UserInputService:GetMouseLocation()
+        startPos = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
         toTop(main)
         TweenService:Create(header, TweenInfo.new(0.12), {BackgroundTransparency = 0.02}):Play()
     end
@@ -381,26 +379,18 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 RunService.RenderStepped:Connect(function(dt)
-    local lerpFactor = 12 * dt -- higher = snappier
-    if dragging then
-    else
-        targetPos = Vector2.new(main.AbsolutePosition.X, main.AbsolutePosition.Y)
+    local lerpFactor = 12 * dt
+    if not dragging then
+        targetPos = Vector2.new(main.AbsolutePosition.X + main.AbsoluteSize.X/2, main.AbsolutePosition.Y + main.AbsoluteSize.Y/2)
     end
-
-    local centerX = targetPos.X + main.AbsoluteSize.X/2
-    local centerY = targetPos.Y + main.AbsoluteSize.Y/2
 
     local curCenterX = main.AbsolutePosition.X + main.AbsoluteSize.X/2
     local curCenterY = main.AbsolutePosition.Y + main.AbsoluteSize.Y/2
 
-    local newCenterX = curCenterX + (centerX - curCenterX) * lerpFactor
-    local newCenterY = curCenterY + (centerY - curCenterY) * lerpFactor
+    local newCenterX = curCenterX + (targetPos.X - curCenterX) * lerpFactor
+    local newCenterY = curCenterY + (targetPos.Y - curCenterY) * lerpFactor
 
-    local newPosX = newCenterX - main.AbsoluteSize.X/2
-    local newPosY = newCenterY - main.AbsoluteSize.Y/2
-
-    main.Position = UDim2.new(0, newPosX, 0, newPosY)
+    main.Position = UDim2.new(0, newCenterX, 0, newCenterY)
 end)
-
 
 return {Logs = Logs, Popups = Popups}
