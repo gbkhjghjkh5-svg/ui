@@ -1,16 +1,22 @@
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
+gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
+local baseWidth, baseHeight = 400, 300
+local currentScale = 1
+
 local main = Instance.new("Frame")
-main.Size = UDim2.new(0, 400, 0, 300)
-main.Position = UDim2.new(0.5, -200, 0.5, -150)
+main.Size = UDim2.new(0, baseWidth, 0, baseHeight)
+main.Position = UDim2.new(0.5, -baseWidth/2, 0.5, -baseHeight/2)
 main.AnchorPoint = Vector2.new(0.5, 0.5)
 main.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+main.BackgroundTransparency = 0.05
 main.BorderSizePixel = 0
 main.Parent = gui
 
@@ -26,6 +32,7 @@ UIStroke.Parent = main
 local header = Instance.new("Frame")
 header.Size = UDim2.new(1, 0, 0, 40)
 header.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+header.BackgroundTransparency = 0.05
 header.BorderSizePixel = 0
 header.Parent = main
 
@@ -34,33 +41,69 @@ headerCorner.CornerRadius = UDim.new(0, 8)
 headerCorner.Parent = header
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 1, 0)
+title.Size = UDim2.new(1, -60, 1, 0)
+title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
 title.Text = "BESE V1.0 Beta"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.Font = Enum.Font.GothamBold
+title.Font = Enum.Font.Code -- monospace
 title.TextSize = 16
+title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = header
+
+-- Close button in header
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 40, 0, 24)
+closeBtn.Position = UDim2.new(1, -50, 0.5, -12)
+closeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+closeBtn.BorderSizePixel = 0
+closeBtn.Text = "X"
+closeBtn.Font = Enum.Font.Code
+closeBtn.TextSize = 14
+closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
+closeBtn.AutoButtonColor = false
+closeBtn.Parent = header
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = closeBtn
+
+local closeStroke = Instance.new("UIStroke")
+closeStroke.Color = Color3.fromRGB(40,40,45)
+closeStroke.Thickness = 1
+closeStroke.Parent = closeBtn
+
+local scaleHint = Instance.new("TextLabel")
+scaleHint.Size = UDim2.new(0, 120, 0, 20)
+scaleHint.Position = UDim2.new(1, -180, 0.5, 10)
+scaleHint.BackgroundTransparency = 1
+scaleHint.Text = "Scale: [ ] decrease / ] increase"
+scaleHint.Font = Enum.Font.Code
+scaleHint.TextSize = 11
+scaleHint.TextColor3 = Color3.fromRGB(160,160,160)
+scaleHint.Parent = header
 
 local logsContainer = Instance.new("ScrollingFrame")
 logsContainer.Size = UDim2.new(1, -20, 1, -60)
 logsContainer.Position = UDim2.new(0, 10, 0, 50)
 logsContainer.BackgroundTransparency = 1
 logsContainer.BorderSizePixel = 0
-logsContainer.ScrollBarThickness = 4
+logsContainer.ScrollBarThickness = 6
 logsContainer.ScrollBarImageColor3 = Color3.fromRGB(60, 60, 70)
 logsContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
 logsContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
 logsContainer.Parent = main
+logsContainer.ScrollBarImageTransparency = 0.25
 
 local logsLayout = Instance.new("UIListLayout")
-logsLayout.Padding = UDim.new(0, 5)
+logsLayout.Padding = UDim.new(0, 6)
+logsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 logsLayout.Parent = logsContainer
 
 local popupOverlay = Instance.new("Frame")
 popupOverlay.Size = UDim2.new(1, 0, 1, 0)
 popupOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-popupOverlay.BackgroundTransparency = 0.7
+popupOverlay.BackgroundTransparency = 1
 popupOverlay.BorderSizePixel = 0
 popupOverlay.Visible = false
 popupOverlay.Parent = main
@@ -87,7 +130,7 @@ popupTitle.Size = UDim2.new(1, 0, 0, 40)
 popupTitle.BackgroundTransparency = 1
 popupTitle.Text = "Notification"
 popupTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-popupTitle.Font = Enum.Font.GothamBold
+popupTitle.Font = Enum.Font.Code
 popupTitle.TextSize = 18
 popupTitle.Parent = popup
 
@@ -97,7 +140,7 @@ popupMessage.Position = UDim2.new(0, 10, 0, 40)
 popupMessage.BackgroundTransparency = 1
 popupMessage.Text = "Message"
 popupMessage.TextColor3 = Color3.fromRGB(200, 200, 200)
-popupMessage.Font = Enum.Font.Gotham
+popupMessage.Font = Enum.Font.Code
 popupMessage.TextSize = 14
 popupMessage.TextWrapped = true
 popupMessage.Parent = popup
@@ -121,91 +164,123 @@ local function createButton(text, color)
     btn.BorderSizePixel = 0
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font = Enum.Font.Gotham
+    btn.Font = Enum.Font.Code
     btn.TextSize = 14
     btn.AutoButtonColor = false
     btn.Parent = buttonContainer
-    
+
     local btnCorner = Instance.new("UICorner")
     btnCorner.CornerRadius = UDim.new(0, 4)
     btnCorner.Parent = btn
-    
+
     local btnStroke = Instance.new("UIStroke")
     btnStroke.Color = Color3.fromRGB(80, 80, 90)
     btnStroke.Thickness = 1
     btnStroke.Parent = btn
-    
+
     btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(
-            math.floor(color.R * 255 * 1.2),
-            math.floor(color.G * 255 * 1.2),
-            math.floor(color.B * 255 * 1.2)
-        )}):Play()
+        local r = math.clamp(color.R * 255 * 1.2, 0, 255)
+        local g = math.clamp(color.G * 255 * 1.2, 0, 255)
+        local b = math.clamp(color.B * 255 * 1.2, 0, 255)
+        TweenService:Create(btn, TweenInfo.new(0.18), {BackgroundColor3 = Color3.fromRGB(r,g,b)}):Play()
     end)
-    
+
     btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = color}):Play()
+        TweenService:Create(btn, TweenInfo.new(0.18), {BackgroundColor3 = color}):Play()
     end)
-    
+
     return btn
 end
 
 local Logs = {}
 local Popups = {}
 
-function Logs:AddLog(type, message, color)
+function Logs:AddLog(typeStr, message, color)
+    color = color or Color3.fromRGB(100,150,255)
     local timestamp = os.date("%H:%M:%S")
-    local logFrame = Instance.new("Frame")
-    logFrame.Size = UDim2.new(1, 0, 0, 25)
-    logFrame.BackgroundTransparency = 1
-    logFrame.Parent = logsContainer
-    
+
+    local outer = Instance.new("Frame")
+    outer.Size = UDim2.new(1, 0, 0, 0)
+    outer.BackgroundTransparency = 1
+    outer.BorderSizePixel = 0
+    outer.Parent = logsContainer
+
+    local logBg = Instance.new("Frame")
+    logBg.Size = UDim2.new(1, 0, 0, 28)
+    logBg.Position = UDim2.new(0, 0, 0, 0)
+    logBg.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+    logBg.BackgroundTransparency = 0.02
+    logBg.BorderSizePixel = 0
+    logBg.Parent = outer
+
+    local bgCorner = Instance.new("UICorner")
+    bgCorner.CornerRadius = UDim.new(0, 6)
+    bgCorner.Parent = logBg
+
+    local bgStroke = Instance.new("UIStroke")
+    bgStroke.Color = Color3.fromRGB(45,45,50)
+    bgStroke.Thickness = 1
+    bgStroke.Parent = logBg
     local timestampLabel = Instance.new("TextLabel")
-    timestampLabel.Size = UDim2.new(0, 60, 1, 0)
+    timestampLabel.Size = UDim2.new(0, 65, 1, 0)
+    timestampLabel.Position = UDim2.new(0, 8, 0, 0)
     timestampLabel.BackgroundTransparency = 1
     timestampLabel.Text = "["..timestamp.."]"
-    timestampLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-    timestampLabel.Font = Enum.Font.Gotham
+    timestampLabel.TextColor3 = Color3.fromRGB(130,130,140)
+    timestampLabel.Font = Enum.Font.Code
     timestampLabel.TextSize = 12
-    timestampLabel.Parent = logFrame
-    
+    timestampLabel.Parent = logBg
+
     local typeLabel = Instance.new("TextLabel")
-    typeLabel.Size = UDim2.new(0, 40, 1, 0)
-    typeLabel.Position = UDim2.new(0, 65, 0, 0)
-    typeLabel.BackgroundTransparency = 1
-    typeLabel.Text = type
-    typeLabel.TextColor3 = color or Color3.fromRGB(100, 150, 255)
-    typeLabel.Font = Enum.Font.GothamBold
+    typeLabel.Size = UDim2.new(0, 60, 1, 0)
+    typeLabel.Position = UDim2.new(0, 75, 0, 0)
+    typeLabel.BackgroundTransparency = 0
+    typeLabel.BackgroundColor3 = Color3.fromRGB(20,20,24)
+    typeLabel.Text = " " .. (typeStr or "INFO")
+    typeLabel.TextColor3 = color
+    typeLabel.Font = Enum.Font.Code
     typeLabel.TextSize = 12
-    typeLabel.Parent = logFrame
-    
+    typeLabel.BorderSizePixel = 0
+    typeLabel.Parent = logBg
+
+    local typeCorner = Instance.new("UICorner")
+    typeCorner.CornerRadius = UDim.new(0, 4)
+    typeCorner.Parent = typeLabel
+
     local messageLabel = Instance.new("TextLabel")
-    messageLabel.Size = UDim2.new(1, -110, 1, 0)
-    messageLabel.Position = UDim2.new(0, 110, 0, 0)
+    messageLabel.Size = UDim2.new(1, -160, 1, 0)
+    messageLabel.Position = UDim2.new(0, 140, 0, 0)
     messageLabel.BackgroundTransparency = 1
-    messageLabel.Text = message
-    messageLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    messageLabel.Font = Enum.Font.Gotham
+    messageLabel.Text = message or ""
+    messageLabel.TextColor3 = Color3.fromRGB(230,230,230)
+    messageLabel.Font = Enum.Font.Code
     messageLabel.TextSize = 12
     messageLabel.TextXAlignment = Enum.TextXAlignment.Left
-    messageLabel.Parent = logFrame
-    
-    logFrame.Size = UDim2.new(1, 0, 0, 0)
-    TweenService:Create(logFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 0, 25)}):Play()
+    messageLabel.TextWrapped = true
+    messageLabel.TextTransparency = 1
+    messageLabel.Parent = logBg
+
+    local tweenSize = TweenService:Create(outer, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 0, 34)})
+    tweenSize:Play()
+    TweenService:Create(messageLabel, TweenInfo.new(0.35), {TextTransparency = 0}):Play()
+
+    logBg.Position = UDim2.new(0, 0, 0, 4)
+    TweenService:Create(logBg, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
 end
 
-function Popups:ShowPopup(title, message, button2Text, button2Callback)
-    popupTitle.Text = title
-    popupMessage.Text = message
-    
+-- Popup functions
+function Popups:ShowPopup(titleText, messageText, button2Text, button2Callback)
+    popupTitle.Text = titleText or "Notification"
+    popupMessage.Text = messageText or ""
+
     buttonContainer:ClearAllChildren()
     buttonLayout.Parent = buttonContainer
-    
+
     local okBtn = createButton("OK", Color3.fromRGB(80, 80, 160))
     okBtn.MouseButton1Click:Connect(function()
         Popups:HidePopup()
     end)
-    
+
     if button2Text then
         local customBtn = createButton(button2Text, Color3.fromRGB(60, 140, 80))
         customBtn.MouseButton1Click:Connect(function()
@@ -215,29 +290,117 @@ function Popups:ShowPopup(title, message, button2Text, button2Callback)
             Popups:HidePopup()
         end)
     end
-    
+
     popupOverlay.Visible = true
     popupOverlay.BackgroundTransparency = 1
     popup.Size = UDim2.new(0, 0, 0, 0)
-    
-    local tweenIn = TweenService:Create(popupOverlay, TweenInfo.new(0.3), {BackgroundTransparency = 0.7})
-    local tweenPopup = TweenService:Create(popup, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 300, 0, 150)})
-    
+    popup.Position = UDim2.new(0.5, 0, 0.5, 0) 
+
+    local tweenIn = TweenService:Create(popupOverlay, TweenInfo.new(0.28), {BackgroundTransparency = 0.7})
+    local tweenPopup = TweenService:Create(popup, TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 300, 0, 150)})
     tweenIn:Play()
     tweenPopup:Play()
 end
 
 function Popups:HidePopup()
-    local tweenOut = TweenService:Create(popupOverlay, TweenInfo.new(0.3), {BackgroundTransparency = 1})
-    local tweenPopup = TweenService:Create(popup, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
-    
+    local tweenOut = TweenService:Create(popupOverlay, TweenInfo.new(0.28), {BackgroundTransparency = 1})
+    local tweenPopup = TweenService:Create(popup, TweenInfo.new(0.26, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
     tweenOut:Play()
     tweenPopup:Play()
-    
     tweenOut.Completed:Connect(function()
         popupOverlay.Visible = false
     end)
 end
+
+local isClosed = false
+local function setClosed(state)
+    isClosed = state
+    if state then
+        TweenService:Create(main, TweenInfo.new(0.26, Enum.EasingStyle.Quad), {BackgroundTransparency = 1}):Play()
+        TweenService:Create(main, TweenInfo.new(0.26, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 0, 0, 0)}):Play()
+    else
+        local w, h = baseWidth * currentScale, baseHeight * currentScale
+        main.Size = UDim2.new(0, 0, 0, 0)
+        TweenService:Create(main, TweenInfo.new(0.30, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, w, 0, h), BackgroundTransparency = 0.05}):Play()
+    end
+end
+
+closeBtn.MouseButton1Click:Connect(function()
+    setClosed(true)
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        if input.KeyCode == Enum.KeyCode.P then
+            setClosed(not isClosed)
+        elseif input.KeyCode == Enum.KeyCode.LeftBracket then
+            currentScale = math.clamp(currentScale - 0.1, 0.5, 2)
+            local w, h = baseWidth * currentScale, baseHeight * currentScale
+            TweenService:Create(main, TweenInfo.new(0.18), {Size = UDim2.new(0, w, 0, h)}):Play()
+        elseif input.KeyCode == Enum.KeyCode.RightBracket then
+            currentScale = math.clamp(currentScale + 0.1, 0.5, 2)
+            local w, h = baseWidth * currentScale, baseHeight * currentScale
+            TweenService:Create(main, TweenInfo.new(0.18), {Size = UDim2.new(0, w, 0, h)}):Play()
+        end
+    end
+end)
+
+local dragging = false
+local dragStart = Vector2.new(0,0)
+local startPos = Vector2.new(0,0)
+local targetPos = Vector2.new(main.AbsolutePosition.X, main.AbsolutePosition.Y)
+
+local function toTop(instance)
+    instance.Parent = instance.Parent
+end
+
+header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = UserInputService:GetMouseLocation() 
+        startPos = Vector2.new(main.AbsolutePosition.X, main.AbsolutePosition.Y)
+        toTop(main)
+        TweenService:Create(header, TweenInfo.new(0.12), {BackgroundTransparency = 0.02}):Play()
+    end
+end)
+
+header.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+        TweenService:Create(header, TweenInfo.new(0.12), {BackgroundTransparency = 0.05}):Play()
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local mouse = UserInputService:GetMouseLocation()
+        local delta = mouse - dragStart
+        targetPos = startPos + delta
+    end
+end)
+
+RunService.RenderStepped:Connect(function(dt)
+    local lerpFactor = 12 * dt -- higher = snappier
+    if dragging then
+    else
+        targetPos = Vector2.new(main.AbsolutePosition.X, main.AbsolutePosition.Y)
+    end
+
+    local centerX = targetPos.X + main.AbsoluteSize.X/2
+    local centerY = targetPos.Y + main.AbsoluteSize.Y/2
+
+    local curCenterX = main.AbsolutePosition.X + main.AbsoluteSize.X/2
+    local curCenterY = main.AbsolutePosition.Y + main.AbsoluteSize.Y/2
+
+    local newCenterX = curCenterX + (centerX - curCenterX) * lerpFactor
+    local newCenterY = curCenterY + (centerY - curCenterY) * lerpFactor
+
+    local newPosX = newCenterX - main.AbsoluteSize.X/2
+    local newPosY = newCenterY - main.AbsoluteSize.Y/2
+
+    main.Position = UDim2.new(0, newPosX, 0, newPosY)
+end)
 
 
 return {Logs = Logs, Popups = Popups}
