@@ -3,7 +3,6 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
-
 local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
 gui.Parent = game:GetService("CoreGui").RobloxGui
@@ -405,5 +404,6 @@ RunService.RenderStepped:Connect(function(dt)
 end)
 
 return {Logs = Logs, Popups = Popups}
+
 
 
