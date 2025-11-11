@@ -45,7 +45,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -60, 1, 0)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "BESE V1.0 Beta"
+title.Text = "BBSE V1.0 Beta"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Font = Enum.Font.Code
 title.TextSize = 16
@@ -444,3 +444,4 @@ RunService.RenderStepped:Connect(function(dt)
 end)
 
 return {Logs = Logs, Popups = Popups}
+
